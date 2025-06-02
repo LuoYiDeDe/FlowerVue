@@ -64,6 +64,15 @@ const routes = [
     component: defineAsyncComponent(() => import('../pages/ActivityDetail.vue')) // 或者类似的路径
   },
   { path: '/vip', name: 'Vip', component: defineAsyncComponent(() => import('../pages/Vip.vue')) },
+  { path: '/points-mall', name: 'PointsMall', component: defineAsyncComponent(() => import('../pages/PointsMall.vue')) },
+  {
+    path: '/points-orders',
+    name: 'PointsOrders',
+    component: () => import('../pages/PointsOrders.vue'),
+    meta: {
+      requiresAuth: true
+    }
+  },
   { path: '/adminlogin', name: 'MerchantLogin', component: defineAsyncComponent(() => import('../pages/MerchantLogin.vue')) }
 ]
 

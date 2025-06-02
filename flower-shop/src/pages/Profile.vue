@@ -20,6 +20,9 @@
         <el-button class="vip-center-btn" type="primary" round @click="goVip">
           会员中心😘🌹
         </el-button>
+        <el-button class="points-mall-btn" type="success" round @click="goPointsMall">
+          积分商城🎁
+        </el-button>
         <div class="profile-menu">
           <div
             class="menu-item"
@@ -73,7 +76,21 @@
                 </div>
                 <div class="order-footer">
                   <el-button size="small" class="order-btn ghost">查看详情</el-button>
-                  <el-button size="small" class="order-btn" type="primary">{{ item.status === '已完成' ? '再次购买' : '确认收货' }}</el-button>
+                  <el-button 
+                    v-if="item.status === '已完成'" 
+                    size="small" 
+                    class="order-btn" 
+                    type="primary"
+                    @click="handleReview(item)"
+                  >
+                    {{ item.hasReview ? '查看我的评论' : '评价' }}
+                  </el-button>
+                  <el-button 
+                    v-else 
+                    size="small" 
+                    class="order-btn" 
+                    type="primary"
+                  >确认收货</el-button>
                 </div>
               </div>
             </div>
@@ -210,6 +227,67 @@
         </el-input>
       </div>
     </div>
+
+    <!-- 添加评论对话框 -->
+    <el-dialog
+      v-model="reviewDialogVisible"
+      title="商品评价"
+      width="50%"
+      class="review-dialog"
+    >
+      <div class="review-form">
+        <div class="rating-section">
+          <span class="rating-label">商品评分：</span>
+          <el-rate
+            v-model="reviewForm.rating"
+            :colors="['#99A9BF', '#F7BA2A', '#FF9900']"
+            show-text
+            :texts="['很差', '较差', '一般', '不错', '很好']"
+          />
+        </div>
+        
+        <div class="upload-section">
+          <span class="upload-label">上传图片：</span>
+          <el-upload
+            action="#"
+            list-type="picture-card"
+            :auto-upload="false"
+            :on-change="handleImageChange"
+            :limit="3"
+          >
+            <el-icon><Plus /></el-icon>
+          </el-upload>
+        </div>
+        
+        <div class="comment-section">
+          <span class="comment-label">评价内容：</span>
+          <el-input
+            v-model="reviewForm.comment"
+            type="textarea"
+            :rows="4"
+            placeholder="请分享您对商品的使用体验..."
+          />
+        </div>
+        
+        <div class="recommend-section">
+          <span class="recommend-label">是否推荐：</span>
+          <el-switch
+            v-model="reviewForm.recommend"
+            active-text="推荐"
+            inactive-text="不推荐"
+          />
+        </div>
+      </div>
+      
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="reviewDialogVisible = false">取消</el-button>
+          <el-button type="primary" @click="submitReview" :loading="submitting">
+            提交评价
+          </el-button>
+        </span>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -220,7 +298,7 @@ import { ref, onMounted, nextTick } from 'vue'
 import { useUserStore } from '../stores/user'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import axios from 'axios'
-import { ChatDotRound, Close } from '@element-plus/icons-vue'
+import { ChatDotRound, Close, Plus } from '@element-plus/icons-vue'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -240,6 +318,16 @@ const chatMessages = ref([])
 const userInput = ref('')
 const isLoading = ref(false)
 const chatMessagesRef = ref(null)
+
+// State for the review dialog
+const reviewDialogVisible = ref(false)
+const reviewForm = ref({
+  rating: 0,
+  comment: '',
+  recommend: true
+})
+const submitting = ref(false)
+const currentOrderItem = ref(null) // 添加：存储当前评论的订单项
 
 // 获取订单列表
 const fetchOrders = async () => {
@@ -310,6 +398,10 @@ const handleTabChange = (tab) => {
 
 const goVip = () => {
   router.push('/vip')
+}
+
+const goPointsMall = () => {
+  router.push('/points-mall')
 }
 
 const couponList = ref([
@@ -659,6 +751,53 @@ const sendMessage = async () => {
     }
   } finally {
     isLoading.value = false
+  }
+}
+
+// Add method to handle review
+const handleReview = (item) => {
+  currentOrderItem.value = item // 添加：保存当前订单项
+  reviewDialogVisible.value = true
+}
+
+// Add method to handle image change in review dialog
+const handleImageChange = (event) => {
+  // Implementation of image change handling
+}
+
+// Add method to submit review
+const submitReview = async () => {
+  submitting.value = true
+  try {
+    // Implementation of submitting review
+    // TODO: Call backend API to submit the review for currentOrderItem.value.id
+    console.log('Submitting review for order:', currentOrderItem.value.id)
+    console.log('Review data:', reviewForm.value)
+
+    // 模拟提交成功（请替换为实际的后端API调用）
+    await new Promise(resolve => setTimeout(resolve, 1000)); // 模拟网络延迟
+
+    ElMessage.success('评价提交成功')
+
+    // 更新订单项的 hasReview 状态
+    if (currentOrderItem.value) {
+      currentOrderItem.value.hasReview = true
+    }
+
+    reviewDialogVisible.value = false
+    // 重置表单和当前订单项
+    reviewForm.value = {
+      rating: 0,
+      comment: '',
+      recommend: true
+    }
+    currentOrderItem.value = null
+
+  } catch (error) {
+    console.error('提交评价失败:', error)
+    ElMessage.error('提交评价失败')
+  } finally {
+    submitting.value = false
   }
 }
 </script>
@@ -1362,5 +1501,110 @@ const sendMessage = async () => {
     right: 20px;
     bottom: 20px;
   }
+}
+
+/* 添加评论对话框样式 */
+.review-dialog :deep(.el-dialog__body) {
+  padding: 20px 30px;
+}
+
+.review-form {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.rating-section {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.rating-label {
+  font-size: 1rem;
+  color: #333;
+  min-width: 80px;
+}
+
+.upload-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.upload-label {
+  font-size: 1rem;
+  color: #333;
+}
+
+.upload-section :deep(.el-upload--picture-card) {
+  width: 100px;
+  height: 100px;
+  line-height: 100px;
+}
+
+.comment-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.comment-label {
+  font-size: 1rem;
+  color: #333;
+}
+
+.comment-section :deep(.el-textarea__inner) {
+  min-height: 120px;
+  resize: none;
+}
+
+.recommend-section {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.recommend-label {
+  font-size: 1rem;
+  color: #333;
+  min-width: 80px;
+}
+
+.dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.dialog-footer .el-button {
+  min-width: 100px;
+}
+
+.points-mall-btn {
+  width: 100%;
+  height: 100px;
+  background: linear-gradient(90deg, #4CAF50 0%, #45a049 100%);
+  border: none;
+  margin-bottom: 22px;
+  font-size: 1.18rem;
+  font-weight: bold;
+  letter-spacing: 1px;
+  box-shadow: 0 4px 16px 0 rgba(76,175,80,0.13);
+  transition: background 0.3s, transform 0.2s;
+  line-height: 1.3;
+  border-radius: 18px;
+  padding: 18px 0 12px 0;
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.points-mall-btn:hover {
+  background: linear-gradient(90deg, #45a049, #4CAF50);
+  transform: scale(1.04);
 }
 </style> 

@@ -80,7 +80,7 @@ const handleMerchantLogin = async () => {
       merchantStore.setMerchantInfo(result.data)
       
       ElMessage.success('登录成功')
-      router.push('/merchant/profile')
+      router.push('/admin/dashboard')
     } else {
       ElMessage.error(result.message || '登录失败，请检查用户名和密码')
     }
