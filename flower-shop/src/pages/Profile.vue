@@ -93,6 +93,18 @@
                   >确认收货</el-button>
                 </div>
               </div>
+              <!-- 添加分页组件 -->
+              <div class="pagination-container" v-if="orderList.length > 0">
+                <el-pagination
+                  v-model:current-page="pagination.pageNum"
+                  v-model:page-size="pagination.pageSize"
+                  :page-sizes="[3, 6, 9, 12]"
+                  :total="pagination.total"
+                  layout="total, sizes, prev, pager, next, jumper"
+                  @size-change="handleSizeChange"
+                  @current-change="handlePageChange"
+                />
+              </div>
             </div>
           </div>
           <div v-else-if="currentTab === 'favorite'" key="favorite">
@@ -329,6 +341,14 @@ const reviewForm = ref({
 const submitting = ref(false)
 const currentOrderItem = ref(null) // 添加：存储当前评论的订单项
 
+// 添加分页相关的状态变量
+const pagination = ref({
+  pageNum: 1,
+  pageSize: 3,
+  total: 0,
+  pages: 0
+})
+
 // 获取订单列表
 const fetchOrders = async () => {
   if (!userStore.isLoggedIn) {
@@ -339,9 +359,16 @@ const fetchOrders = async () => {
 
   loading.value = true
   try {
-    const res = await axios.get(`http://localhost:8087/order/getorders?userId=${userStore.userId}`)
+    const res = await axios.get(`http://localhost:8087/order/getorders`, {
+      params: {
+        userId: userStore.userId,
+        pageNum: pagination.value.pageNum,
+        pageSize: pagination.value.pageSize
+      }
+    })
     if (res.data.code === 200) {
-      orderList.value = res.data.data.map(order => ({
+      const pageResult = res.data.data
+      orderList.value = pageResult.list.map(order => ({
         id: order.orderNo,
         status: getOrderStatus(order.orderStatus),
         img: order.image, 
@@ -350,6 +377,9 @@ const fetchOrders = async () => {
         time: order.createdAt,
         price: order.totalAmount
       }))
+      // 更新分页信息
+      pagination.value.total = pageResult.total
+      pagination.value.pages = pageResult.pages
     } else {
       ElMessage.error(res.data.message || '获取订单列表失败')
     }
@@ -507,7 +537,6 @@ const fetchFavorites = async () => {
   }
 };
 
-// Add method to view favorite product detail
 const viewFavoriteDetail = async (item) => {
   if (!userStore.isLoggedIn) {
     ElMessage.warning('请先登录')
@@ -516,11 +545,7 @@ const viewFavoriteDetail = async (item) => {
   }
 
   try {
-    // Assuming your favorite item object already has the necessary product ID
-    // If not, you might need to fetch product ID based on favorite item ID
-    const productId = item.id // Replace 'item.id' with the actual property that holds the product ID if it's different
-
-    // Call backend API to get product details
+    const productId = item.id 
     const res = await axios.get(`http://localhost:8086/product/getflower?id=${productId}`)
     
     if (res.data.code === 200) {
@@ -799,6 +824,19 @@ const submitReview = async () => {
   } finally {
     submitting.value = false
   }
+}
+
+// 处理页码改变
+const handlePageChange = (page) => {
+  pagination.value.pageNum = page
+  fetchOrders()
+}
+
+// 处理每页条数改变
+const handleSizeChange = (size) => {
+  pagination.value.pageSize = size
+  pagination.value.pageNum = 1
+  fetchOrders()
 }
 </script>
 
@@ -1606,5 +1644,29 @@ const submitReview = async () => {
 .points-mall-btn:hover {
   background: linear-gradient(90deg, #45a049, #4CAF50);
   transform: scale(1.04);
+}
+
+/* 添加分页样式 */
+.pagination-container {
+  margin-top: 20px;
+  display: flex;
+  justify-content: center;
+  padding: 20px 0;
+}
+
+.pagination-container :deep(.el-pagination) {
+  --el-pagination-button-bg-color: #fff;
+  --el-pagination-hover-color: #e91e63;
+  --el-pagination-button-color: #666;
+  --el-pagination-button-disabled-color: #999;
+  --el-pagination-button-disabled-bg-color: #f5f5f5;
+}
+
+.pagination-container :deep(.el-pagination.is-background .el-pager li:not(.is-disabled).is-active) {
+  background-color: #e91e63;
+}
+
+.pagination-container :deep(.el-pagination.is-background .el-pager li:not(.is-disabled):hover) {
+  color: #e91e63;
 }
 </style> 

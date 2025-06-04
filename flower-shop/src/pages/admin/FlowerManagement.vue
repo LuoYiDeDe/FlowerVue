@@ -46,6 +46,19 @@
       </el-table-column>
     </el-table>
 
+    <!-- 添加分页组件 -->
+    <div class="pagination-container" v-if="!loading && flowerList.length > 0">
+      <el-pagination
+        v-model:current-page="pagination.pageNum"
+        v-model:page-size="pagination.pageSize"
+        :page-sizes="[8, 16, 24, 32]"
+        :total="pagination.total"
+        layout="total, sizes, prev, pager, next, jumper"
+        @size-change="handleSizeChange"
+        @current-change="handlePageChange"
+      />
+    </div>
+
     <!-- 添加/编辑对话框 -->
     <el-dialog
       :title="dialogTitle"
@@ -106,15 +119,29 @@ const dialogVisible = ref(false)
 const dialogTitle = computed(() => isEdit.value ? '编辑花束' : '添加花束')
 const isEdit = ref(false)
 
+// 添加分页相关的状态变量
+const pagination = ref({
+  pageNum: 1,
+  pageSize: 16,
+  total: 0,
+  pages: 0
+})
+
 // 获取所有花束数据
 const fetchFlowerList = async () => {
   loading.value = true
   try {
-    const response = await axios.get('http://localhost:8086/product/getall')
+    const response = await axios.get('http://localhost:8086/product/getall', {
+      params: {
+        pageNum: pagination.value.pageNum,
+        pageSize: pagination.value.pageSize
+      }
+    })
     console.log('获取到的花束数据:', response.data)
     
     if (response.data.code === 200) {
-      flowerList.value = response.data.data.map(item => ({
+      const pageResult = response.data.data
+      flowerList.value = pageResult.list.map(item => ({
         id: item.id,
         name: item.name,
         price: item.price,
@@ -124,6 +151,9 @@ const fetchFlowerList = async () => {
         description: item.description,
         imageUrl: item.imageUrl || ''
       }))
+      // 更新分页信息
+      pagination.value.total = pageResult.total
+      pagination.value.pages = pageResult.pages
     } else {
       ElMessage.error(response.data.message || '获取花束数据失败')
     }
@@ -133,6 +163,19 @@ const fetchFlowerList = async () => {
   } finally {
     loading.value = false
   }
+}
+
+// 处理页码改变
+const handlePageChange = (page) => {
+  pagination.value.pageNum = page
+  fetchFlowerList()
+}
+
+// 处理每页条数改变
+const handleSizeChange = (size) => {
+  pagination.value.pageSize = size
+  pagination.value.pageNum = 1
+  fetchFlowerList()
 }
 
 // 页面加载时获取数据
@@ -252,5 +295,28 @@ const handleSubmit = async () => {
   color: #909399;
   font-size: 20px;
   border-radius: 4px;
+}
+
+.pagination-container {
+  margin-top: 20px;
+  display: flex;
+  justify-content: center;
+  padding: 20px 0;
+}
+
+.pagination-container :deep(.el-pagination) {
+  --el-pagination-button-bg-color: #fff;
+  --el-pagination-hover-color: #409EFF;
+  --el-pagination-button-color: #666;
+  --el-pagination-button-disabled-color: #999;
+  --el-pagination-button-disabled-bg-color: #f5f5f5;
+}
+
+.pagination-container :deep(.el-pagination.is-background .el-pager li:not(.is-disabled).is-active) {
+  background-color: #409EFF;
+}
+
+.pagination-container :deep(.el-pagination.is-background .el-pager li:not(.is-disabled):hover) {
+  color: #409EFF;
 }
 </style> 

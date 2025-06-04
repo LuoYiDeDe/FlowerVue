@@ -34,6 +34,14 @@
             <el-icon><Ticket /></el-icon>
             <span>优惠券管理</span>
           </el-menu-item>
+          <el-menu-item index="/admin/points-products">
+            <el-icon><Present /></el-icon>
+            <span>积分商品管理</span>
+          </el-menu-item>
+          <el-menu-item index="/admin/points-orders">
+            <el-icon><Tickets /></el-icon>
+            <span>积分订单管理</span>
+          </el-menu-item>
         </el-menu>
       </el-aside>
       
@@ -71,7 +79,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { HomeFilled, Goods, List, User, Fold, Ticket } from '@element-plus/icons-vue'
+import { HomeFilled, Goods, List, User, Fold, Ticket, Present, Tickets } from '@element-plus/icons-vue'
 import { ElMessageBox } from 'element-plus'
 import Breadcrumb from '../components/Breadcrumb.vue'
 
@@ -113,6 +121,7 @@ const handleLogout = () => {
 
 .logo {
   height: 60px;
+  width: 100%;
   display: flex;
   align-items: center;
   padding: 0 20px;

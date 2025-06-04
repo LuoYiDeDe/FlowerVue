@@ -1,6 +1,17 @@
 import { defineAsyncComponent } from 'vue'
 import { createRouter, createWebHistory } from 'vue-router'
 import AdminLayout from '../layouts/AdminLayout.vue'
+import Home from '../pages/Home.vue'
+import Login from '../pages/Login.vue'
+import Register from '../pages/Register.vue'
+import Flowers from '../pages/Flowers.vue'
+import Profile from '../pages/Profile.vue'
+import Admin from '../pages/admin/Admin.vue'
+import FlowerManagement from '../pages/admin/FlowerManagement.vue'
+import OrderManagement from '../pages/admin/OrderManagement.vue'
+import PointsProductManagement from '../pages/admin/PointsProductManagement.vue'
+import PointsOrderManagement from '../pages/admin/PointsOrderManagement.vue'
+import { useUserStore } from '../stores/user'
 
 const routes = [
   {
@@ -17,14 +28,22 @@ const routes = [
       {
         path: 'flowers',
         name: 'FlowerManagement',
-        component: () => import('../pages/admin/FlowerManagement.vue'),
-        meta: { title: '花束管理' }
+        component: FlowerManagement
       },
       {
         path: 'orders',
         name: 'OrderManagement',
-        component: () => import('../pages/admin/OrderManagement.vue'),
-        meta: { title: '订单管理' }
+        component: OrderManagement
+      },
+      {
+        path: 'points-products',
+        name: 'PointsProductManagement',
+        component: PointsProductManagement
+      },
+      {
+        path: 'points-orders',
+        name: 'PointsOrderManagement',
+        component: PointsOrderManagement
       },
       {
         path: 'users',
@@ -41,27 +60,27 @@ const routes = [
     ]
   },
   // 前台页面
-  { path: '/', name: 'Home', component: defineAsyncComponent(() => import('../pages/Home.vue')) },
-  { path: '/login', name: 'Login', component: defineAsyncComponent(() => import('../pages/Login.vue')) },
-  { path: '/register', name: 'Register', component: defineAsyncComponent(() => import('../pages/Register.vue')) },
+  { path: '/', name: 'Home', component: Home },
+  { path: '/login', name: 'Login', component: Login },
+  { path: '/register', name: 'Register', component: Register },
   { path: '/contact', name: 'Contact', component: defineAsyncComponent(() => import('../pages/Contact.vue')) },
   { path: '/faq', name: 'FAQ', component: defineAsyncComponent(() => import('../pages/FAQ.vue')) },
-  { path: '/profile', name: 'Profile', component: defineAsyncComponent(() => import('../pages/Profile.vue')) },
+  { path: '/profile', name: 'Profile', component: Profile, meta: { requiresAuth: true } },
   { path: '/favorites', name: 'Favorites', component: defineAsyncComponent(() => import('../pages/Favorites.vue')) },
   { path: '/points', name: 'Points', component: defineAsyncComponent(() => import('../pages/Points.vue')) },
   { path: '/address', name: 'Address', component: defineAsyncComponent(() => import('../pages/Address.vue')) },
   { path: '/about', name: 'About', component: defineAsyncComponent(() => import('../pages/About.vue')) },
-  { path: '/flowers', name: 'Flowers', component: defineAsyncComponent(() => import('../pages/Flowers.vue')) },
+  { path: '/flowers', name: 'Flowers', component: Flowers },
   { path: '/order-form', name: 'OrderForm', component: defineAsyncComponent(() => import('../pages/OrderForm.vue')) },
   {
     path: '/activity',
     name: 'Activity',
-    component: defineAsyncComponent(() => import('../pages/Activity.vue')) // 或者类似的路径
+    component: defineAsyncComponent(() => import('../pages/Activity.vue'))
   },
   {
     path: '/activity-detail',
     name: 'ActivityDetail',
-    component: defineAsyncComponent(() => import('../pages/ActivityDetail.vue')) // 或者类似的路径
+    component: defineAsyncComponent(() => import('../pages/ActivityDetail.vue'))
   },
   { path: '/vip', name: 'Vip', component: defineAsyncComponent(() => import('../pages/Vip.vue')) },
   { path: '/points-mall', name: 'PointsMall', component: defineAsyncComponent(() => import('../pages/PointsMall.vue')) },
@@ -79,6 +98,19 @@ const routes = [
 const router = createRouter({
   history: createWebHistory(),
   routes
+})
+
+// 路由守卫
+router.beforeEach((to, from, next) => {
+  const userStore = useUserStore()
+  
+  if (to.meta.requiresAuth && !userStore.isLoggedIn) {
+    next('/login')
+  } else if (to.meta.requiresAdmin && !userStore.isAdmin) {
+    next('/')
+  } else {
+    next()
+  }
 })
 
 export default router 

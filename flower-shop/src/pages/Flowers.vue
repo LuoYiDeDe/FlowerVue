@@ -52,6 +52,17 @@
         </el-card>
       </el-col>
     </el-row>
+    <div class="pagination-container" v-if="!loading && flowers.length > 0">
+      <el-pagination
+        v-model:current-page="pagination.pageNum"
+        v-model:page-size="pagination.pageSize"
+        :page-sizes="[8, 16, 24, 32]"
+        :total="pagination.total"
+        layout="total, sizes, prev, pager, next, jumper"
+        @size-change="handleSizeChange"
+        @current-change="handlePageChange"
+      />
+    </div>
     <el-dialog
       v-model="dialogVisible"
       title="商品详情"
@@ -140,6 +151,14 @@ const collecting = ref(false)
 const router = useRouter()
 const userStore = useUserStore()
 
+// 添加分页相关的状态变量
+const pagination = ref({
+  pageNum: 1,
+  pageSize: 16,
+  total: 0,
+  pages: 0
+})
+
 // AI 聊天相关
 const showChatWindow = ref(false)
 const chatMessages = ref([])
@@ -162,9 +181,50 @@ const filteredFlowers = computed(() => {
   })
 })
 
+// 处理页码改变
+const handlePageChange = (page) => {
+  pagination.value.pageNum = page
+  fetchFlowers()
+}
+
+// 处理每页条数改变
+const handleSizeChange = (size) => {
+  pagination.value.pageSize = size
+  pagination.value.pageNum = 1
+  fetchFlowers()
+}
+
+// 获取花束数据的方法
+const fetchFlowers = async () => {
+  loading.value = true
+  try {
+    const response = await axios.get('http://localhost:8086/product/getall', {
+      params: {
+        pageNum: pagination.value.pageNum,
+        pageSize: pagination.value.pageSize
+      }
+    })
+    if (response.data.code === 200) {
+      const pageResult = response.data.data
+      flowers.value = pageResult.list
+      // 更新分页信息
+      pagination.value.total = pageResult.total
+      pagination.value.pages = pageResult.pages
+    } else {
+      ElMessage.error(response.data.message || '获取商品数据失败')
+    }
+  } catch (error) {
+    console.error('获取花束数据失败:', error)
+    ElMessage.error('获取商品数据失败')
+  } finally {
+    loading.value = false
+  }
+}
+
 // 搜索处理函数
 const handleSearch = () => {
-  // 可以在这里添加额外的搜索逻辑
+  pagination.value.pageNum = 1 // 搜索时重置到第一页
+  fetchFlowers()
 }
 
 const viewDetail = async (item) => {
@@ -453,21 +513,8 @@ const sendMessage = async () => {
   }
 }
 
-onMounted(async () => {
-  try {
-    // 调用后端API获取花束数据
-    const response = await axios.get('http://localhost:8086/product/getall')
-    console.log('获取到的数据:', response.data)
-    console.log('数据类型:', typeof response.data)
-    console.log('是否为数组:', Array.isArray(response.data))
-    flowers.value = response.data.data
-    console.log('flowers.value:', flowers.value)
-  } catch (error) {
-    console.error('获取花束数据失败:', error)
-    // 这里可以添加错误提示
-  } finally {
-    loading.value = false
-  }
+onMounted(() => {
+  fetchFlowers()
 })
 
 </script>
@@ -885,5 +932,28 @@ onMounted(async () => {
     right: 20px;
     bottom: 20px;
   }
+}
+
+.pagination-container {
+  margin-top: 30px;
+  display: flex;
+  justify-content: center;
+  padding: 20px 0;
+}
+
+.pagination-container :deep(.el-pagination) {
+  --el-pagination-button-bg-color: #fff;
+  --el-pagination-hover-color: #e91e63;
+  --el-pagination-button-color: #666;
+  --el-pagination-button-disabled-color: #999;
+  --el-pagination-button-disabled-bg-color: #f5f5f5;
+}
+
+.pagination-container :deep(.el-pagination.is-background .el-pager li:not(.is-disabled).is-active) {
+  background-color: #e91e63;
+}
+
+.pagination-container :deep(.el-pagination.is-background .el-pager li:not(.is-disabled):hover) {
+  color: #e91e63;
 }
 </style> 
